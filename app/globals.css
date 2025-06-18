@@ -20,10 +20,23 @@ body {
   background: #000000; /* Solid black to prevent flashing */
   color: #ffffff;
   overflow-x: hidden;
+  /* iOS touch optimization */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent bounce scrolling on iOS */
+  overscroll-behavior: none;
+  /* Improve touch responsiveness */
+  touch-action: manipulation;
 }
 
 html {
   background: #000000; /* Ensure HTML is also black */
+  /* iOS touch optimization */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
 }
 
 /* Spooky animations */
