@@ -24,11 +24,8 @@ export default function MouseSpotlight() {
     // Handle mouse movement for desktop
     const handleMouseMove = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
-    };
-
-    // Handle touch movement - specifically optimized for iPhone/mobile
+    }; // Handle touch movement - optimized for iPhone/mobile without preventing scroll
     const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault(); // Prevent default touch behavior
       const touch = e.touches[0] || e.changedTouches[0];
       if (touch) {
         setPosition({ x: touch.clientX, y: touch.clientY });
@@ -49,18 +46,16 @@ export default function MouseSpotlight() {
       if (touch) {
         setPosition({ x: touch.clientX, y: touch.clientY });
       }
-    };
-
-    // Add event listeners with proper options for mobile
+    }; // Add event listeners with proper options for mobile
     document.addEventListener("mousemove", handleMouseMove, { passive: true });
     document.addEventListener("touchstart", handleTouchStart, {
       passive: true,
     });
-    document.addEventListener("touchmove", handleTouchMove, { passive: false }); // Not passive to prevent default
+    document.addEventListener("touchmove", handleTouchMove, { passive: true }); // Passive to allow scrolling
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     // Also listen on window for better coverage on mobile
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     return () => {
       window.removeEventListener("resize", checkIsMobile);
