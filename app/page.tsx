@@ -2,45 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-
-// Custom cursor trail component
-const CursorTrail = () => {
-  const [trail, setTrail] = useState<{ x: number; y: number; id: number }[]>(
-    []
-  );
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const newTrail = {
-        x: e.clientX,
-        y: e.clientY,
-        id: Date.now(),
-      };
-
-      setTrail((prev) => [...prev.slice(-8), newTrail]);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    return () => document.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  return (
-    <>
-      {trail.map((point, index) => (
-        <div
-          key={point.id}
-          className="cursor-trail"
-          style={{
-            left: point.x,
-            top: point.y,
-            opacity: ((index + 1) / trail.length) * 0.5,
-            transform: `scale(${(index + 1) / trail.length})`,
-          }}
-        />
-      ))}
-    </>
-  );
-};
+import Experience from "../components/Experience";
+import SpookyLoader from "../components/SpookyLoader";
 
 // Project card component
 const ProjectCard = ({
@@ -146,24 +109,68 @@ const FloatingGhost = ({ delay = 0 }: { delay?: number }) => (
   </div>
 );
 
+// Flip card service component
+const ServiceFlipCard = ({
+  title,
+  description,
+  backTitle,
+  backDescription,
+  icon,
+  delay = 0,
+}: {
+  title: string;
+  description: string;
+  backTitle: string;
+  backDescription: string;
+  icon: string;
+  delay?: number;
+}) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  return (
+    <div
+      className="flip-card-container opacity-0 fade-in-up"
+      style={{ animationDelay: `${delay}ms` }}
+      onMouseEnter={() => setIsFlipped(true)}
+      onMouseLeave={() => setIsFlipped(false)}
+    >
+      <div className={`flip-card ${isFlipped ? "flipped" : ""}`}>
+        {/* Front side */}
+        <div className="flip-card-front bg-black/40 backdrop-blur-md rounded-2xl p-8 h-80 flex flex-col items-center justify-center text-center border border-purple-500/20">
+          <div className="text-6xl mb-6 ghost-float">{icon}</div>
+          <h3 className="text-2xl font-bold text-white mb-4 phantom-title">
+            {title}
+          </h3>
+          <p className="text-gray-300 leading-relaxed">{description}</p>
+        </div>
+
+        {/* Back side */}
+        <div className="flip-card-back bg-gradient-to-br from-purple-900/90 to-cyan-900/90 backdrop-blur-md rounded-2xl p-8 h-80 flex flex-col items-center justify-center text-center border border-cyan-500/20">
+          <div className="text-6xl mb-6 ghost-float">{icon}</div>
+          <h3 className="text-2xl font-bold text-cyan-300 mb-4 phantom-title">
+            {backTitle}
+          </h3>
+          <p className="text-gray-200 leading-relaxed">{backDescription}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
+  const handleLoadingComplete = () => {
     setIsLoaded(true);
-  }, []);
+  };
 
   if (!isLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-4xl phantom-title">Loading the spirits... 👻</div>
-      </div>
-    );
+    return <SpookyLoader onComplete={handleLoadingComplete} />;
   }
-
   return (
     <main className="min-h-screen relative overflow-hidden">
-      <CursorTrail />
+      {/* 3D Background Experience */}
+      <Experience />
 
       {/* Floating ghost decorations */}
       <div className="absolute top-20 left-10">
@@ -250,6 +257,52 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ETHEREAL SERVICES Section with Flip Cards */}
+      <section className="services-section relative w-full py-20">
+        <div className="container-center">
+          <div className="section-header mb-16">
+            <h2 className="text-5xl md:text-6xl font-bold text-center mb-6 phantom-title opacity-0 fade-in-up">
+              ETHEREAL SERVICES
+            </h2>
+            <p
+              className="text-xl text-gray-300 text-center max-w-3xl mx-auto opacity-0 fade-in-up"
+              style={{ animationDelay: "400ms" }}
+            >
+              Spectral offerings that transcend the boundaries between{" "}
+              <span className="text-purple-400">reality</span> and{" "}
+              <span className="text-cyan-400">digital mysticism</span>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <ServiceFlipCard
+              title="Web Conjuring"
+              description="Manifesting digital realms with ethereal precision and ghostly elegance."
+              backTitle="Spectral Development"
+              backDescription="We weave code like ancient spells, creating websites that haunt users with their beauty and functionality. Each pixel placed with supernatural precision."
+              icon="🌙"
+              delay={600}
+            />
+            <ServiceFlipCard
+              title="3D Apparitions"
+              description="Breathing life into three-dimensional spirits that dance across screens."
+              backTitle="Dimensional Magic"
+              backDescription="Our Three.js mastery brings forth interactive 3D experiences that blur the line between the physical and digital planes. Reality becomes malleable."
+              icon="👻"
+              delay={800}
+            />
+            <ServiceFlipCard
+              title="UI Enchantments"
+              description="Crafting interfaces that bewitch users with intuitive mysticism."
+              backTitle="Interface Sorcery"
+              backDescription="Every button, every animation, every interaction is carefully orchestrated to create user experiences that feel both familiar and otherworldly."
+              icon="✨"
+              delay={1000}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Projects Section */}
       <section className="projects-section relative w-full">
         <div className="container-center">
@@ -279,7 +332,7 @@ export default function Home() {
                   "Framer Motion",
                   "TypeScript",
                 ]}
-                delay={600}
+                delay={200}
               />
             </div>
 
@@ -297,9 +350,53 @@ export default function Home() {
                   "Blender",
                   "TypeScript",
                 ]}
-                delay={1000}
+                delay={600}
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section className="services-section relative bg-black/20 backdrop-blur-sm w-full">
+        <div className="container-center text-center">
+          <div className="section-header">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 phantom-title opacity-0 fade-in-up">
+              OUR SERVICES
+            </h2>
+            <p
+              className="text-xl text-gray-300 opacity-0 fade-in-up max-w-2xl mx-auto"
+              style={{ animationDelay: "400ms" }}
+            >
+              Enchanting solutions for your digital needs
+            </p>
+          </div>
+
+          <div className="services-grid grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <ServiceFlipCard
+              title="Spectral Web Design"
+              description="Hauntingly beautiful and user-friendly web designs that captivate and engage visitors."
+              backTitle="Why Choose Us?"
+              backDescription="Our designs are not only visually stunning but also optimized for performance and conversions."
+              icon="🎨"
+              delay={200}
+            />
+            <ServiceFlipCard
+              title="Ethereal Development"
+              description="Cutting-edge development services using the latest technologies to bring your vision to life."
+              backTitle="Our Expertise"
+              backDescription="We specialize in Next.js, React, Three.js, and more to create seamless and interactive web experiences."
+              icon="💻"
+              delay={400}
+            />
+            <ServiceFlipCard
+              title="Ghostly SEO"
+              description="Optimize your website to rank higher in search results and attract more organic traffic."
+              backTitle="Our Promise"
+              backDescription="We use ethical and effective SEO strategies that ensure long-term success and visibility."
+              icon="👻"
+              delay={600}
+            />
           </div>
         </div>
       </section>
@@ -331,7 +428,7 @@ export default function Home() {
               📧 Conjure an Email
             </a>
             <a
-              href="https://github.com/phantom3"
+              href="https://github.com/theKageEth"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gray-800 text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-300 border border-purple-600/50 creepy-shake"
