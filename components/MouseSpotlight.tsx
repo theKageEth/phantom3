@@ -69,6 +69,7 @@ export default function MouseSpotlight() {
   }, []);
   return (
     <>
+      {" "}
       {/* Innermost bright circle - smaller on mobile */}
       <div
         style={{
@@ -83,11 +84,12 @@ export default function MouseSpotlight() {
             isMobile ? "100px" : "150px"
           } at ${position.x}px ${
             position.y
-          }px, transparent 0%, transparent 80%, rgba(0, 0, 0, 0.3) 100%)`,
+          }px, transparent 0%, transparent 80%, rgba(0, 0, 0, ${
+            isMobile ? "0.15" : "0.2"
+          }) 100%)`,
           transition: "background 0.05s ease-out", // Faster transition for mobile
         }}
       />
-
       {/* Middle circle - adjusted for mobile */}
       <div
         style={{
@@ -102,11 +104,12 @@ export default function MouseSpotlight() {
             isMobile ? "200px" : "300px"
           } at ${position.x}px ${
             position.y
-          }px, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.7) 100%)`,
+          }px, transparent 0%, transparent 50%, rgba(0, 0, 0, ${
+            isMobile ? "0.4" : "0.6"
+          }) 100%)`,
           transition: "background 0.05s ease-out",
         }}
       />
-
       {/* Outer circle - adjusted for mobile */}
       <div
         style={{
@@ -121,7 +124,9 @@ export default function MouseSpotlight() {
             isMobile ? "350px" : "500px"
           } at ${position.x}px ${
             position.y
-          }px, transparent 0%, transparent 30%, rgba(0, 0, 0, 0.95) 100%)`,
+          }px, transparent 0%, transparent 30%, rgba(0, 0, 0, ${
+            isMobile ? "0.7" : "0.85"
+          }) 100%)`,
           transition: "background 0.05s ease-out",
         }}
       />
