@@ -16,40 +16,54 @@ gsap.registerPlugin(ScrollTrigger);
 // Camera controller for scroll-based movement
 function CameraController() {
   const { camera } = useThree();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Camera movement on scroll
-      gsap
-        .timeline({
-          scrollTrigger: {
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1,
-          },
-        })
-        .to(camera.position, {
-          y: -10,
-          z: 8,
-          duration: 1,
-        })
-        .to(camera.position, {
-          x: 3,
-          y: -15,
-          z: 12,
-          duration: 1,
-        })
-        .to(camera.position, {
-          x: -2,
-          y: -20,
-          z: 6,
-          duration: 1,
-        });
-    });
+    // Check if device is mobile
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    return () => ctx.revert();
-  }, [camera]);
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    const ctx = gsap.context(() => {
+      // Disable heavy camera animations on mobile for performance
+      if (!isMobile) {
+        // Camera movement on scroll - desktop only
+        gsap
+          .timeline({
+            scrollTrigger: {
+              trigger: "body",
+              start: "top top",
+              end: "bottom bottom",
+              scrub: 1,
+            },
+          })
+          .to(camera.position, {
+            y: -10,
+            z: 8,
+            duration: 1,
+          })
+          .to(camera.position, {
+            x: 3,
+            y: -15,
+            z: 12,
+            duration: 1,
+          })
+          .to(camera.position, {
+            x: -2,
+            y: -20,
+            z: 6,
+            duration: 1,
+          });
+      }
+    });
+    return () => {
+      ctx.revert();
+      window.removeEventListener("resize", checkIsMobile);
+    };
+  }, [camera, isMobile]);
 
   return null;
 }
@@ -65,6 +79,8 @@ function FloatingGhost({
   const ghostRef = useRef<Group>(null);
   const sparklesRef = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   // Fixed random colors - generated once per ghost
   const sparkleColor = useRef<string>("");
   const ghostColor = useRef<string>("");
@@ -102,9 +118,13 @@ function FloatingGhost({
     "#778899",
     "#F5DEB3",
   ];
-
   // Initialize fixed random colors once
   if (!sparkleColor.current) {
+    // Check if mobile
+    if (typeof window !== "undefined") {
+      setIsMobile(window.innerWidth < 768);
+    }
+
     sparkleColor.current =
       sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
     ghostColor.current =
@@ -180,12 +200,12 @@ function FloatingGhost({
             emissive={sparkleColor.current}
             emissiveIntensity={1.0}
           />
-        </mesh>
-        {/* Enhanced sparkles - multiple layers with reduced radius */}
+        </mesh>{" "}
+        {/* Enhanced sparkles - multiple layers with reduced radius and mobile optimization */}
         <group ref={sparklesRef}>
           {/* Main sparkles - tighter around ghost */}
           <Sparkles
-            count={isHovered ? 120 : 60}
+            count={isMobile ? (isHovered ? 40 : 20) : isHovered ? 120 : 60}
             scale={3 * size}
             size={isHovered ? 4 : 3}
             speed={1.5}
@@ -195,7 +215,7 @@ function FloatingGhost({
 
           {/* Secondary sparkles - closer to ghost */}
           <Sparkles
-            count={isHovered ? 80 : 40}
+            count={isMobile ? (isHovered ? 25 : 15) : isHovered ? 80 : 40}
             scale={2 * size}
             size={isHovered ? 3 : 2}
             speed={2.0}
@@ -205,7 +225,7 @@ function FloatingGhost({
 
           {/* Tiny micro sparkles - very close to ghost */}
           <Sparkles
-            count={isHovered ? 150 : 80}
+            count={isMobile ? (isHovered ? 30 : 20) : isHovered ? 150 : 80}
             scale={2.5 * size}
             size={isHovered ? 2 : 1}
             speed={2.5}
@@ -220,46 +240,91 @@ function FloatingGhost({
 
 // Main 3D Scene - Reduced ghost count for small screens
 function Scene3D() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
+
   return (
     <group>
-      <CameraController />{" "}
+      <CameraController />
       {/* Slightly higher ambient light to see the spotlight effect */}
       <ambientLight intensity={0.1} color="#1a1a2e" />
-      {/* Reduced number of ghosts - better spaced for small screens */}
-      <FloatingGhost position={[3, 1, -8]} size={1.0} />
-      <FloatingGhost position={[4, -3, -6]} size={1.1} />
-      <FloatingGhost position={[-5, 0, -5]} size={1.2} />
-      <FloatingGhost position={[0, -4, -5]} size={1.2} />
-      <FloatingGhost position={[4, -8, -4]} size={0.9} />
-      <FloatingGhost position={[-3, -10, -7]} size={1.0} />
-      <FloatingGhost position={[5, -15, -6]} size={1.1} />
-      <FloatingGhost position={[-4, -18, -5]} size={0.8} />
-      <FloatingGhost position={[2, -20, -8]} size={1.0} />
-      {/* Mouse spotlight effect - now outside Canvas for proper webpage overlay */}
+
+      {/* Reduced number of ghosts for mobile performance */}
+      {isMobile ? (
+        // Mobile: Only 4 ghosts for better performance
+        <>
+          <FloatingGhost position={[3, 1, -8]} size={1.0} />
+          <FloatingGhost position={[-5, 0, -5]} size={1.2} />
+          <FloatingGhost position={[0, -4, -5]} size={1.2} />
+          <FloatingGhost position={[-3, -10, -7]} size={1.0} />
+        </>
+      ) : (
+        // Desktop: Full ghost count
+        <>
+          <FloatingGhost position={[3, 1, -8]} size={1.0} />
+          <FloatingGhost position={[4, -3, -6]} size={1.1} />
+          <FloatingGhost position={[-5, 0, -5]} size={1.2} />
+          <FloatingGhost position={[0, -4, -5]} size={1.2} />
+          <FloatingGhost position={[4, -8, -4]} size={0.9} />
+          <FloatingGhost position={[-3, -10, -7]} size={1.0} />
+          <FloatingGhost position={[5, -15, -6]} size={1.1} />
+          <FloatingGhost position={[-4, -18, -5]} size={0.8} />
+          <FloatingGhost position={[2, -20, -8]} size={1.0} />
+        </>
+      )}
     </group>
   );
 }
 
 // Main Experience component
 export default function Experience() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
+
   return (
     <>
       <MouseSpotlight />
       <SparkleEffects />
       <div className="fixed inset-0 z-0">
+        {" "}
         <Canvas
           camera={{
             position: [0, 0, 5],
             fov: 45,
           }}
-          shadows
+          shadows={!isMobile} // Disable shadows on mobile for performance
+          gl={{
+            antialias: !isMobile, // Disable antialiasing on mobile
+          }}
+          dpr={isMobile ? 1 : Math.min(window.devicePixelRatio, 2)} // Lower pixel ratio on mobile
           style={{
             background: "linear-gradient(to bottom, #000000, #0A0A0A)",
           }}
         >
           <Suspense fallback={null}>
             <Scene3D />
-            <Environment preset="night" />
+            {/* Only load environment on desktop for performance */}
+            {!isMobile && <Environment preset="night" />}
           </Suspense>
         </Canvas>
       </div>

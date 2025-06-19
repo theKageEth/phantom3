@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function MouseSpotlight() {
   const [position, setPosition] = useState(() => {
@@ -12,6 +12,7 @@ export default function MouseSpotlight() {
   });
 
   const [isMobile, setIsMobile] = useState(false);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -21,14 +22,27 @@ export default function MouseSpotlight() {
 
     checkIsMobile();
     window.addEventListener("resize", checkIsMobile);
+
+    // Throttle position updates for better performance on mobile
+    const updatePosition = (x: number, y: number) => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(() => {
+        setPosition({ x, y });
+      });
+    };
+
     // Handle mouse movement for desktop
     const handleMouseMove = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
-    }; // Handle touch movement - optimized for iPhone/mobile without preventing scroll
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    // Handle touch movement - optimized for iPhone/mobile without preventing scroll
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0] || e.changedTouches[0];
       if (touch) {
-        setPosition({ x: touch.clientX, y: touch.clientY });
+        updatePosition(touch.clientX, touch.clientY);
       }
     };
 
@@ -36,7 +50,7 @@ export default function MouseSpotlight() {
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
       if (touch) {
-        setPosition({ x: touch.clientX, y: touch.clientY });
+        updatePosition(touch.clientX, touch.clientY);
       }
     };
 
@@ -44,33 +58,33 @@ export default function MouseSpotlight() {
     const handleTouchEnd = (e: TouchEvent) => {
       const touch = e.changedTouches[0];
       if (touch) {
-        setPosition({ x: touch.clientX, y: touch.clientY });
+        updatePosition(touch.clientX, touch.clientY);
       }
-    }; // Add event listeners with proper options for mobile
+    };
+
+    // Add event listeners with proper options for mobile
     document.addEventListener("mousemove", handleMouseMove, { passive: true });
     document.addEventListener("touchstart", handleTouchStart, {
       passive: true,
     });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true }); // Passive to allow scrolling
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
-    // Also listen on window for better coverage on mobile
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
     return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
       window.removeEventListener("resize", checkIsMobile);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("touchstart", handleTouchStart);
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchstart", handleTouchStart);
     };
   }, []);
-  return (
-    <>
-      {" "}
-      {/* Innermost bright circle - smaller on mobile */}
+
+  // Use single optimized layer for mobile to reduce rendering load
+  if (isMobile) {
+    return (
       <div
         style={{
           position: "fixed",
@@ -80,17 +94,32 @@ export default function MouseSpotlight() {
           height: "100vh",
           pointerEvents: "none",
           zIndex: 9999,
-          background: `radial-gradient(circle ${
-            isMobile ? "100px" : "150px"
-          } at ${position.x}px ${
-            position.y
-          }px, transparent 0%, transparent 80%, rgba(0, 0, 0, ${
-            isMobile ? "0.15" : "0.2"
-          }) 100%)`,
-          transition: "background 0.05s ease-out", // Faster transition for mobile
+          background: `radial-gradient(circle 250px at ${position.x}px ${position.y}px, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.5) 100%)`,
+          willChange: "background",
         }}
       />
-      {/* Middle circle - adjusted for mobile */}
+    );
+  }
+
+  // Desktop version with multiple layers
+  return (
+    <>
+      {/* Innermost bright circle */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          pointerEvents: "none",
+          zIndex: 9999,
+          background: `radial-gradient(circle 150px at ${position.x}px ${position.y}px, transparent 0%, transparent 80%, rgba(0, 0, 0, 0.2) 100%)`,
+          transition: "background 0.1s ease-out",
+        }}
+      />
+
+      {/* Middle circle */}
       <div
         style={{
           position: "fixed",
@@ -100,17 +129,12 @@ export default function MouseSpotlight() {
           height: "100vh",
           pointerEvents: "none",
           zIndex: 9998,
-          background: `radial-gradient(circle ${
-            isMobile ? "200px" : "300px"
-          } at ${position.x}px ${
-            position.y
-          }px, transparent 0%, transparent 50%, rgba(0, 0, 0, ${
-            isMobile ? "0.4" : "0.6"
-          }) 100%)`,
-          transition: "background 0.05s ease-out",
+          background: `radial-gradient(circle 300px at ${position.x}px ${position.y}px, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.6) 100%)`,
+          transition: "background 0.1s ease-out",
         }}
       />
-      {/* Outer circle - adjusted for mobile */}
+
+      {/* Outer circle */}
       <div
         style={{
           position: "fixed",
@@ -120,14 +144,8 @@ export default function MouseSpotlight() {
           height: "100vh",
           pointerEvents: "none",
           zIndex: 9997,
-          background: `radial-gradient(circle ${
-            isMobile ? "350px" : "500px"
-          } at ${position.x}px ${
-            position.y
-          }px, transparent 0%, transparent 30%, rgba(0, 0, 0, ${
-            isMobile ? "0.7" : "0.85"
-          }) 100%)`,
-          transition: "background 0.05s ease-out",
+          background: `radial-gradient(circle 500px at ${position.x}px ${position.y}px, transparent 0%, transparent 30%, rgba(0, 0, 0, 0.85) 100%)`,
+          transition: "background 0.1s ease-out",
         }}
       />
     </>
