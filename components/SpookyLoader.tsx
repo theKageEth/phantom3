@@ -1,320 +1,191 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { Float, MeshDistortMaterial, Sparkles } from "@react-three/drei";
-import { useRef, useState, useEffect } from "react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import * as THREE from "three";
+import { useState, useEffect } from "react";
 
 // Mouse-following Ghost Component
 const LoaderGhost = () => {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
-  const ghostRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth) * 100;
-      const y = (e.clientY / window.innerHeight) * 100;
-      setMousePosition({ x, y });
+    let rafId: number;
+
+    const updatePosition = (clientX: number, clientY: number) => {
+      // Cancel previous animation frame
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      // Use requestAnimationFrame for smooth updates
+      rafId = requestAnimationFrame(() => {
+        const x = (clientX / window.innerWidth) * 100;
+        const y = (clientY / window.innerHeight) * 100;
+        setMousePosition({ x, y });
+      });
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePosition(e.clientX, e.clientY);
+    };
 
-  useGSAP(() => {
-    if (!ghostRef.current) return;
+    // Add touch support for iPhone - using clientX/clientY for viewport positioning
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (touch) {
+        updatePosition(touch.clientX, touch.clientY);
+      }
+    };
 
-    // Smooth movement towards mouse position
-    gsap.to(ghostRef.current, {
-      x: (mousePosition.x - 50) * 0.3, // Reduced movement range
-      y: (mousePosition.y - 50) * 0.3,
-      duration: 0.8,
-      ease: "power2.out",
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch) {
+        updatePosition(touch.clientX, touch.clientY);
+      }
+    };    // Add both mouse and touch listeners with passive for better iPhone performance
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { 
+      passive: true, 
+      capture: false 
     });
-  }, [mousePosition]);
+    window.addEventListener("touchstart", handleTouchStart, { 
+      passive: true, 
+      capture: false 
+    });
 
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchstart", handleTouchStart);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, []);
   return (
     <div
-      ref={ghostRef}
       className="fixed pointer-events-none z-40"
       style={{
-        left: "50%",
-        top: "50%",
+        left: `${mousePosition.x}%`,
+        top: `${mousePosition.y}%`,
         transform: "translate(-50%, -50%)",
         width: "40px",
         height: "40px",
+        // Force hardware acceleration for smooth iPhone performance
+        willChange: "transform",
+        backfaceVisibility: "hidden",
+        WebkitTransform: "translate3d(0,0,0)",
       }}
     >
       <div
+        className="w-full h-full rounded-full bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg animate-pulse"
         style={{
-          width: "100%",
-          height: "100%",
-          background: "rgba(255, 255, 255, 0.9)",
-          borderRadius: "50% 50% 50% 50% / 60% 60% 40% 40%",
+          background:
+            "radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 70%, transparent 100%)",
           boxShadow:
-            "0 0 20px rgba(255, 255, 255, 0.6), inset 0 0 15px rgba(139, 92, 246, 0.3)",
-          transform: "rotate(-5deg)",
-          animation: "ghostFloat 3s ease-in-out infinite",
+            "0 0 20px rgba(255,255,255,0.3), inset 0 0 20px rgba(255,255,255,0.1)",
         }}
-      />
-      {/* Ghost eyes */}
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          width: "6px",
-          height: "6px",
-          background: "#000",
-          borderRadius: "50%",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          width: "6px",
-          height: "6px",
-          background: "#000",
-          borderRadius: "50%",
-        }}
-      />
+      >
+        {/* Ghost eyes */}
+        <div className="absolute top-1/3 left-1/4 w-1.5 h-1.5 bg-black rounded-full"></div>
+        <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-black rounded-full"></div>
+      </div>
     </div>
   );
 };
 
-// Loading Orb Component
-function LoadingOrb() {
-  const orbRef = useRef<THREE.Mesh>(null);
-
-  useGSAP(() => {
-    if (!orbRef.current) return;
-
-    // Continuous rotation
-    gsap.to(orbRef.current.rotation, {
-      x: Math.PI * 2,
-      y: Math.PI * 2,
-      z: Math.PI * 2,
-      duration: 4,
-      repeat: -1,
-      ease: "none",
-    });
-
-    // Pulsing scale
-    gsap.to(orbRef.current.scale, {
-      x: 1.5,
-      y: 1.5,
-      z: 1.5,
-      duration: 1.5,
-      repeat: -1,
-      yoyo: true,
-      ease: "power2.inOut",
-    });
-  });
-
-  return (
-    <Float rotationIntensity={0.5} floatIntensity={0.5} speed={2}>
-      <mesh ref={orbRef}>
-        <icosahedronGeometry args={[1, 2]} />
-        <MeshDistortMaterial
-          color="#8B5CF6"
-          transparent
-          opacity={0.8}
-          distort={0.5}
-          speed={5}
-          metalness={0.9}
-          roughness={0.1}
-        />
-      </mesh>
-
-      {/* Inner orb */}
-      <mesh scale={0.5}>
-        <sphereGeometry args={[0.8, 32, 32]} />
-        <MeshDistortMaterial
-          color="#06B6D4"
-          transparent
-          opacity={0.6}
-          distort={0.3}
-          speed={3}
-          metalness={0.7}
-          roughness={0.2}
-        />
-      </mesh>
-
-      <Sparkles
-        count={50}
-        scale={4}
-        size={3}
-        speed={1}
-        opacity={0.8}
-        color="#FFFFFF"
-      />
-    </Float>
-  );
-}
-
-// Loading Progress Ring
-function ProgressRing() {
-  const ringRef = useRef<THREE.Mesh>(null);
-
-  useGSAP(() => {
-    if (!ringRef.current) return;
-
-    gsap.to(ringRef.current.rotation, {
-      z: Math.PI * 2,
-      duration: 3,
-      repeat: -1,
-      ease: "none",
-    });
-  });
-
-  return (
-    <mesh ref={ringRef} position={[0, 0, 0]}>
-      <ringGeometry args={[2.5, 2.8, 32]} />
-      <meshStandardMaterial color="#8B5CF6" transparent opacity={0.6} />
-    </mesh>
-  );
-}
-
-// Loading Scene
-function LoadingScene() {
-  return (
-    <group>
-      {/* Lighting */}
-      <ambientLight intensity={0.3} color="#8B5CF6" />
-      <pointLight position={[5, 5, 5]} intensity={1} color="#06B6D4" />
-      <pointLight position={[-5, -5, 5]} intensity={0.5} color="#8B5CF6" />
-      {/* Main loading orb */}
-      <LoadingOrb /> {/* Progress ring */}
-      <ProgressRing />
-      {/* Background sparkles */}
-      <Sparkles
-        count={200}
-        scale={15}
-        size={1}
-        speed={0.5}
-        opacity={0.4}
-        color="#FFFFFF"
-      />
-    </group>
-  );
-}
-
-// Main Spooky Loader Component
+// Loader component
 export default function SpookyLoader({
   onComplete,
 }: {
-  onComplete: () => void;
+  onComplete?: () => void;
 }) {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-  useGSAP(() => {
-    // Simulate loading progress
-    const tl = gsap.timeline();
+  const [sparkles, setSparkles] = useState<
+    Array<{
+      left: number;
+      top: number;
+      delay: number;
+      duration: number;
+    }>
+  >([]);
 
-    tl.to(
-      { progress: 0 },
-      {
-        progress: 100,
-        duration: 3,
-        ease: "power2.out",
-        onUpdate: function () {
-          setProgress(this.targets()[0].progress);
-        },
-        onComplete: () => {
-          // Fade out animation
-          gsap.to(containerRef.current, {
-            opacity: 0,
-            duration: 1,
-            ease: "power2.inOut",
-            onComplete: () => {
-              setIsVisible(false);
-              onComplete();
-            },
-          });
-        },
-      }
-    );
-  });
-
-  // Add CSS animation for ghost floating
+  // Generate sparkle positions on client side only
   useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      @keyframes ghostFloat {
-        0%, 100% { 
-          transform: rotate(-5deg) translateY(0px) scale(1); 
-        }
-        50% { 
-          transform: rotate(5deg) translateY(-10px) scale(1.05); 
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
+    const sparkleData = Array.from({ length: 20 }).map(() => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 2,
+    }));
+    setSparkles(sparkleData);
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setIsVisible(false);
+            onComplete?.();
+          }, 500);
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [onComplete]);
+
   if (!isVisible) return null;
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-      style={{ backgroundColor: "#000000" }} // Ensure solid black background
-    >
-      {/* Mouse-following Ghost */}
-      <LoaderGhost />
-
-      {/* 3D Loading Scene */}
-      <div className="w-full h-screen">
-        {" "}
-        <Canvas
-          camera={{ position: [0, 0, 8], fov: 50 }}
-          gl={{ antialias: true, alpha: false }} // Disable alpha to prevent transparency issues
-          dpr={[1, 2]}
-          style={{ background: "#000000" }} // Ensure Canvas background is black
-        >
-          <LoadingScene />
-        </Canvas>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20"></div>
+      {/* Floating sparkles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {sparkles.map((sparkle, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full animate-ping"
+            style={{
+              left: `${sparkle.left}%`,
+              top: `${sparkle.top}%`,
+              animationDelay: `${sparkle.delay}s`,
+              animationDuration: `${sparkle.duration}s`,
+            }}
+          />
+        ))}
       </div>
 
-      {/* Loading UI */}
-      <div className="absolute bottom-20 text-center">
-        <div className="mb-6">
-          <div className="text-2xl font-bold text-purple-400 mb-2 font-[family-name:var(--font-nosifer)]">
-            PHANTOM3
-          </div>
-          <div className="text-lg text-gray-300">
-            Materializing the ethereal...
-          </div>
+      {/* Mouse-following ghost */}
+      <LoaderGhost />
+
+      {/* Center content */}
+      <div className="relative z-10 text-center text-white">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
+            Phantom Portfolio
+          </h1>
+          <p className="text-lg text-gray-300">Conjuring the experience...</p>
         </div>
 
         {/* Progress bar */}
-        <div className="w-80 h-2 bg-gray-800 rounded-full overflow-hidden mb-4">
+        <div className="w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-purple-600 to-cyan-600 transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        {/* Progress percentage */}
-        <div className="text-sm text-gray-400">
-          {Math.round(progress)}% Complete
-        </div>
+        <div className="mt-4 text-sm text-gray-400">{progress}% complete</div>
+      </div>
 
-        {/* Spooky loading messages */}
-        <div className="mt-4 text-sm text-purple-300 opacity-70">
-          {progress < 30 && "Awakening the spirits..."}
-          {progress >= 30 && progress < 60 && "Conjuring dark magic..."}
-          {progress >= 60 && progress < 90 && "Weaving ethereal experiences..."}
-          {progress >= 90 && "Almost ready to haunt..."}
-        </div>
+      {/* Pulsing orb in center */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 pointer-events-none">
+        <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-r from-purple-400/40 to-cyan-400/40 animate-ping"></div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Individual sparkle component
 const FloatingSparkle = ({
@@ -178,79 +178,111 @@ const FloatingOrb = ({
 };
 
 export default function SparkleEffects() {
-  const sparkles = [];
-  const fires = [];
-  const ghosts = [];
-  const orbs = [];
-  // Generate random sparkles - reduced size
-  for (let i = 0; i < 25; i++) {
-    sparkles.push({
+  const [sparkles, setSparkles] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      size: number;
+      color: string;
+      duration: number;
+      delay: number;
+    }>
+  >([]);
+
+  const [fires, setFires] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      delay: number;
+    }>
+  >([]);
+
+  const [ghosts, setGhosts] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      delay: number;
+      color: string;
+    }>
+  >([]);
+
+  const [orbs, setOrbs] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      color: string;
+      delay: number;
+    }>
+  >([]);
+
+  // Generate all random values on client side only
+  useEffect(() => {
+    const colors = [
+      "#FFD700",
+      "#FF69B4",
+      "#00FFFF",
+      "#90EE90",
+      "#FF6347",
+      "#DDA0DD",
+      "#F0E68C",
+      "#87CEEB",
+    ];
+
+    // Generate sparkles
+    const sparkleData = Array.from({ length: 25 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: Math.random() * 2 + 1,
-      color: [
-        "#FFD700",
-        "#FF69B4",
-        "#00FFFF",
-        "#90EE90",
-        "#FF6347",
-        "#DDA0DD",
-        "#F0E68C",
-        "#87CEEB",
-      ][Math.floor(Math.random() * 8)],
+      color: colors[Math.floor(Math.random() * colors.length)],
       duration: Math.random() * 3 + 2,
       delay: Math.random() * 5,
-    });
-  }
+    }));
 
-  // Generate spinning fires
-  for (let i = 0; i < 8; i++) {
-    fires.push({
+    // Generate fires
+    const fireData = Array.from({ length: 8 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
       delay: Math.random() * 3,
-    });
-  } // Generate spinning ghosts with unique colors - reduced to 6
-  const ghostColors = [
-    "rgba(255, 255, 255, 0.8)", // Classic white
-    "rgba(139, 92, 246, 0.8)", // Purple
-    "rgba(236, 72, 153, 0.8)", // Pink
-    "rgba(59, 130, 246, 0.8)", // Blue
-    "rgba(16, 185, 129, 0.8)", // Green
-    "rgba(245, 158, 11, 0.8)", // Orange
-  ];
+    }));
 
-  for (let i = 0; i < 6; i++) {
-    ghosts.push({
+    // Generate ghosts
+    const ghostColors = [
+      "rgba(255, 255, 255, 0.8)",
+      "rgba(139, 92, 246, 0.8)",
+      "rgba(236, 72, 153, 0.8)",
+      "rgba(59, 130, 246, 0.8)",
+      "rgba(16, 185, 129, 0.8)",
+      "rgba(245, 158, 11, 0.8)",
+    ];
+
+    const ghostData = Array.from({ length: 6 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
       delay: Math.random() * 4,
-      color: ghostColors[i], // Each ghost gets a unique color
-    });
-  }
+      color: ghostColors[i],
+    }));
 
-  // Generate floating orbs
-  for (let i = 0; i < 12; i++) {
-    orbs.push({
+    // Generate orbs
+    const orbData = Array.from({ length: 12 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      color: [
-        "#8B5CF6",
-        "#EC4899",
-        "#10B981",
-        "#F59E0B",
-        "#EF4444",
-        "#3B82F6",
-        "#06B6D4",
-        "#84CC16",
-      ][Math.floor(Math.random() * 8)],
+      color: colors[Math.floor(Math.random() * colors.length)],
       delay: Math.random() * 6,
-    });
-  }
+    }));
+
+    setSparkles(sparkleData);
+    setFires(fireData);
+    setGhosts(ghostData);
+    setOrbs(orbData);
+  }, []);
 
   useEffect(() => {
     // Add CSS animations

@@ -3,18 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 
 export default function MouseSpotlight() {
-  const [position, setPosition] = useState(() => {
-    // Safe initialization for SSR
-    if (typeof window !== "undefined") {
-      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    }
-    return { x: 400, y: 300 }; // fallback for SSR
-  });
-
+  const [position, setPosition] = useState({ x: 400, y: 300 }); // Default center position
   const [isMobile, setIsMobile] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Initialize position to actual center on client mount
+    setPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
     // Check if device is mobile
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -36,12 +32,11 @@ export default function MouseSpotlight() {
     // Handle mouse movement for desktop
     const handleMouseMove = (e: MouseEvent) => {
       updatePosition(e.clientX, e.clientY);
-    };
-
-    // Handle touch movement - optimized for iPhone/mobile without preventing scroll
+    }; // Handle touch movement - optimized for iPhone with clientX/clientY for viewport positioning
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0] || e.changedTouches[0];
       if (touch) {
+        // Using clientX/clientY ensures viewport-relative positioning even when scrolling
         updatePosition(touch.clientX, touch.clientY);
       }
     };
@@ -60,15 +55,21 @@ export default function MouseSpotlight() {
       if (touch) {
         updatePosition(touch.clientX, touch.clientY);
       }
-    };
-
-    // Add event listeners with proper options for mobile
+    }; // Add event listeners with proper options for mobile
     document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    // Use more aggressive passive options for iPhone touch events
     document.addEventListener("touchstart", handleTouchStart, {
       passive: true,
+      capture: false,
     });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
-    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+    document.addEventListener("touchmove", handleTouchMove, {
+      passive: true,
+      capture: false,
+    });
+    document.addEventListener("touchend", handleTouchEnd, {
+      passive: true,
+      capture: false,
+    });
 
     return () => {
       if (rafRef.current) {
@@ -80,22 +81,19 @@ export default function MouseSpotlight() {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, []);
-
-  // Use single optimized layer for mobile to reduce rendering load
+  }, []); // Use single optimized layer for mobile to reduce rendering load
   if (isMobile) {
     return (
       <div
+        className="pointer-events-none fixed top-0 left-0 w-full h-screen z-50"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          pointerEvents: "none",
-          zIndex: 9999,
-          background: `radial-gradient(circle 250px at ${position.x}px ${position.y}px, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.5) 100%)`,
+          background: `radial-gradient(circle 200px at ${position.x}px ${position.y}px, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0.8) 100%)`,
           willChange: "background",
+          // Force hardware acceleration on iPhone
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          // Optimize for touch scrolling
+          WebkitOverflowScrolling: "touch",
         }}
       />
     );
