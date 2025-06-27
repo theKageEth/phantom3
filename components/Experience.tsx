@@ -3,7 +3,7 @@
 import MouseSpotlight from "./MouseSpotlight";
 import SparkleEffects from "./SparkleEffects";
 
-// Main Experience component - now just 2D effects for better performance
+// Main Experience component - desktop mouse flashlight + sparkles
 export default function Experience() {
   return (
     <>

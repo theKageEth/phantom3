@@ -23,29 +23,10 @@ const ProjectCard = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("fade-in-up");
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div
       ref={cardRef}
-      className="project-card bg-black/40 backdrop-blur-md rounded-2xl p-10 opacity-0 max-w-lg w-full mx-auto"
+      className="project-card bg-black/40 backdrop-blur-md rounded-2xl p-10 opacity-0 fade-in-up max-w-lg w-full mx-auto"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="relative w-full h-64 mb-8 rounded-xl overflow-hidden group">
@@ -67,7 +48,7 @@ const ProjectCard = ({
         {tech.map((item, index) => (
           <span
             key={index}
-            className="px-3 py-1 bg-purple-900/30 text-purple-300 rounded-full text-sm border border-purple-700/50"
+            className="!px-3 !py-1 bg-purple-900/30 text-purple-300 rounded-full text-sm border border-purple-700/50"
           >
             {item}
           </span>
@@ -79,6 +60,7 @@ const ProjectCard = ({
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 glow-pulse creepy-shake"
+        style={{ marginTop: "1rem", marginBottom: "0.5rem" }}
       >
         <span>👻 Visit Haunted Site</span>
         <svg
@@ -126,13 +108,42 @@ const ServiceFlipCard = ({
   delay?: number;
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    // Detect if device supports touch
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  const handleMouseEnter = () => {
+    // Only flip on hover for non-touch devices
+    if (!isTouchDevice) {
+      setIsFlipped(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Only flip back on mouse leave for non-touch devices
+    if (!isTouchDevice) {
+      setIsFlipped(false);
+    }
+  };
+
+  const handleClick = () => {
+    // For touch devices, toggle on click
+    // For non-touch devices, this won't interfere with hover
+    if (isTouchDevice) {
+      setIsFlipped(!isFlipped);
+    }
+  };
 
   return (
     <div
       className="flip-card-container opacity-0 fade-in-up"
       style={{ animationDelay: `${delay}ms` }}
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       <div className={`flip-card ${isFlipped ? "flipped" : ""}`}>
         {/* Front side */}
@@ -195,14 +206,14 @@ export default function Home() {
         <div className="container-center">
           <div
             className="section-header fade-in-up"
-            style={{ animationDelay: "200ms" }}
+            style={{ animationDelay: "0ms" }}
           >
             <h1 className="phantom-title text-6xl md:text-8xl lg:text-9xl font-bold mb-8 opacity-0 fade-in-up">
               PHANTOM3
             </h1>
             <div
               className="text-2xl md:text-3xl gradient-text font-semibold opacity-0 fade-in-up"
-              style={{ animationDelay: "600ms" }}
+              style={{ animationDelay: "200ms" }}
             >
               Web Development Studio
             </div>
@@ -211,7 +222,7 @@ export default function Home() {
           <div className="section-content">
             <p
               className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-16 leading-relaxed opacity-0 fade-in-up"
-              style={{ animationDelay: "1000ms" }}
+              style={{ animationDelay: "400ms" }}
             >
               Crafting <span className="text-purple-400 flicker">ethereal</span>{" "}
               digital experiences with cutting-edge technology. We bring your
@@ -221,7 +232,7 @@ export default function Home() {
 
             <div
               className="tech-badges flex flex-wrap justify-center opacity-0 fade-in-up"
-              style={{ animationDelay: "1400ms" }}
+              style={{ animationDelay: "600ms" }}
             >
               <div className="flex items-center gap-3 text-purple-400">
                 <span className="text-2xl">⚡</span>
@@ -245,7 +256,7 @@ export default function Home() {
           {/* Scroll indicator */}
           <div
             className="absolute bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 fade-in-up"
-            style={{ animationDelay: "2000ms" }}
+            style={{ animationDelay: "800ms" }}
           >
             <div className="flex flex-col items-center text-purple-400">
               <span className="text-sm mb-4">Descend into our work</span>
@@ -418,12 +429,13 @@ export default function Home() {
           </div>
 
           <div
-            className="contact-buttons flex flex-wrap justify-center opacity-0 fade-in-up"
+            className="contact-buttons flex flex-wrap justify-center gap-4 opacity-0 fade-in-up"
             style={{ animationDelay: "800ms" }}
           >
             <a
               href="mailto:contact@phantom3.dev"
-              className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 glow-pulse creepy-shake"
+              className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 glow-pulse creepy-shake"
+              style={{ padding: "0.75rem 1.5rem" }}
             >
               📧 Conjure an Email
             </a>
@@ -431,7 +443,8 @@ export default function Home() {
               href="https://github.com/theKageEth"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-800 text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-300 border border-purple-600/50 creepy-shake"
+              className="bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all duration-300 border border-purple-600/50 creepy-shake"
+              style={{ padding: "0.75rem 1.5rem" }}
             >
               👻 GitHub Portal
             </a>
